@@ -1,0 +1,154 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          conanexiles
+# Required-Start:    $local_fs $remote_fs $network
+# Required-Stop:     $local_fs $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Conan Exiles Dedicated Server
+### END INIT INFO
+
+# I suppose I should put the variables in a /etc/default/conanexiles file
+USERNAME=steam
+SERVER_DIR="/home/steam/conanexiles"
+SERVER_PORT=7777
+QUERY_PORT=27015
+MAX_PLAYERS=10
+SCRIPTNAME=/etc/init.d/conanexiles
+# If you want to the server to only listen on a specific IP address, then define it below
+#IP_ADDRESS=127.0.0.1
+
+##############################################################################
+### BEGIN SCRIPT
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+NAME=conanexiles-${USERNAME}-${SERVER_PORT}
+SERVER_LISTEN_ADDRESS="*:${SERVER_PORT}"
+QUERY_LISTEN_ADDRESS="*:${QUERY_PORT}"
+OPTIONS="-log -MaxPlayers=$MAX_PLAYERS -Port=$SERVER_PORT -QueryPort=$QUERY_PORT"
+if [ ! -z $IP_ADDRESS ]; then 
+	OPTIONS="$OPTIONS -Multihome=$IP_ADDRESS";
+	SERVER_LISTEN_ADDRESS="${IP_ADDRESS}:${SERVER_PORT}"
+	QUERY_LISTEN_ADDRESS="${IP_ADDRESS}:${QUERY_PORT}"
+fi
+DESC="Conan Exiles in $SERVER_DIR as $USERNAME on server port ${SERVER_LISTEN_ADDRESS}, and query port ${QUERY_LISTEN_ADDRESS}"
+
+function get_pid() {
+	PID=$(lsof -i -n | grep $USERNAME | grep UDP | grep "${SERVER_LISTEN_ADDRESS}" | grep ConanSand | awk '{print $2}')
+	if [ ! -z ${PID} ]; then
+		echo $PID
+	else
+		return 1
+	fi
+}
+
+case "$1" in
+	start)
+		echo -n "Starting ${DESC}: " "$NAME"
+		screen -S $NAME -d -m su - $USERNAME -s /bin/sh -c "xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32' wine64 ${SERVER_DIR}/ConanSandboxServer.exe $OPTIONS" || exit 1
+		until get_pid > /dev/null; do sleep 1; done
+		PID=$(get_pid)
+		echo $PID > /run/${NAME}.pid
+		echo "."
+		;;
+	stop)
+		PID=$(get_pid)
+		if [ -z $PID ]; then
+			echo "$NAME isn't running"
+			exit 1
+		else
+			echo -n "Stopping $DESC" "$NAME"
+			kill $PID || exit 1
+			rm -f /run/${NAME}.pid
+			while get_pid > /dev/null; do sleep 1; done
+			echo "."
+		fi
+		;;
+	restart)
+		$0 stop
+		$0 start
+		;;
+	status)
+		PID=$(get_pid)
+		if [ -z $PID ]; then
+			echo "$NAME is not running"
+		else
+			echo "$NAME is running"
+		fi
+		;;
+	connect)
+		screen -r $NAME
+		;;
+	update)
+		PID=$(get_pid)
+		if [ ! -z $PID ]; then
+			echo "$NAME is still running"
+			exit 1
+		fi
+		echo "Updating ..."
+		su - $USERNAME -s /bin/sh -c "steamcmd.sh +@sSteamCmdForcePlatformType windows +force_install_dir ${SERVER_DIR} +login anonymous +app_update 443030 validate +quit"
+		;;
+	backup)
+		PID=$(get_pid)
+		if [ ! -z $PID ]; then
+			echo "$NAME is still running"
+			exit 1
+		fi
+		echo "Backing up server files"
+		if [ ! -d "${SERVER_DIR}/backup" ]; then
+			su - $USERNAME -s /bin/sh -c "mkdir -p ${SERVER_DIR}/backup"
+		fi
+		BACKUP_FILE="${SERVER_DIR}/backup/$(date +%Y%m%d-%H%M).tar.gz"
+		printf "creating backup archive $BACKUP_FILE"
+		su - $USERNAME -s /bin/sh -c "tar -zcf $BACKUP_FILE -C ${SERVER_DIR} ConanSandbox/Saved"
+		echo .
+		;;
+	restore)
+		if [ -z $2 ]; then
+			echo "USAGE: $0 restore <archive>"
+			exit 1
+		fi
+		if [ ! -f "$2" ]; then
+			echo "$2 doesn't exist"
+			exit 1
+		fi
+		PID=$(get_pid)
+		if [ ! -z $PID ]; then
+			echo "$NAME is still running"
+			exit 1
+		fi
+		if $(lsof | grep ${SERVER_DIR}/ConanSandbox/Saved > /dev/null ); then
+			echo "still running"
+			sleep 5
+		fi
+		DATE=$(date +%Y%m%d-%H%M)
+		printf "renameing ${SERVER_DIR}/ConanSandbox/Saved ${SERVER_DIR}/ConanSandbox/Saved.${DATE}"
+		su - $USERNAME -s /bin/sh -c "mv ${SERVER_DIR} ConanSandbox/Saved ConanSandbox/Saved.${DATE}"
+		echo .
+		printf "restoring backup archive $BACKUP_FILE"
+		su - $USERNAME -s /bin/sh -c "tar -zxf $BACKUP_FILE -C ${SERVER_DIR}"
+		echo .
+		$0 start
+		;;
+	checkgamedb)
+		if ! $(which sqlite3 > /dev/null); then
+			echo "ABORTING: sqlite3 is not installed";
+			exit 1;
+		fi
+		PID=$(get_pid)
+		if [ ! -z $PID ]; then
+			echo "ABORTING: $NAME is still running"
+			exit 1
+		fi
+		echo "checking saved game files"
+		cd ${SERVER_DIR}/ConanSandbox/Saved
+		for a in game*.db; do
+			echo "$a"
+			sqlite3 $a "pragma integrity_check"
+		done
+		;;
+	*)
+		echo "usage: $0 <start|stop|restart|status|connect|update|backup|restore <archive>|checkgamedb>"
+		exit 1
+		;;
+esac
+exit 0
