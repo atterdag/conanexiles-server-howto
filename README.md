@@ -57,7 +57,7 @@ Update packages
 sudo apt-get update
 ```
 
-# Install Wine
+## Install Wine
 
 ```
 sudo apt-get install --install-recommends winehq-staging
