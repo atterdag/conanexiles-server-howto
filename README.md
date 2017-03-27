@@ -43,7 +43,7 @@ wget https://dl.winehq.org/wine-builds/Release.key
 sudo apt-key add Release.key
 ```
 
-Add the repository to */etc/apt/sources.list.d/*
+Add the repository to **/etc/apt/sources.list.d/**
 
 ```
 cat << EOF | sudo tee /etc/apt/sources.list.d/winehq.list
@@ -179,7 +179,7 @@ Its also in ServerSettings.ini that you set all the settings that you can do in-
 
 If you'r running a LAN Server, then its a good idea to raise the values as below
 
-Engine.ini
+**Engine.ini**
 
 ```
 [OnlineSubsystemSteam]
@@ -190,7 +190,7 @@ MaxClientRate=100000
 MaxInternetClientRate=100000 
 ```
 
-Game.ini
+**Game.ini**
 
 ```
 [/script/engine.gamenetworkmanager]
