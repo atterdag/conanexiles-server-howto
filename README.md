@@ -51,13 +51,13 @@ deb https://dl.winehq.org/wine-builds/debian/ jessie main
 EOF
 ```
 
-Update packages
+Update package list
 
 ```
 sudo apt-get update
 ```
 
-## Install Wine
+Install Wine packages
 
 ```
 sudo apt-get install --install-recommends winehq-staging
