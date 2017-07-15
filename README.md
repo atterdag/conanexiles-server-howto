@@ -1,4 +1,4 @@
-# Installing Conan Exiles on Debian Jessie                                          #
+# Installing Conan Exiles on Debian Stretch                                          #
 There are several articles that helps you with how to install a Conan Exiles Dedicated Server on Linux. But none of them seems to take security into account, so I decided to write my own.
 
 ## Source material used
@@ -9,7 +9,7 @@ There are several articles that helps you with how to install a Conan Exiles Ded
 
 ## Prerequisites
 * A server with sufficient resources for your configuration
-* Debian Jessie amd64 installation
+* Debian Stretch amd64 installation
 * At least 4 GB available free space on /home partition, and 1G on /opt
 * Set up a firewall - I recommend UFW, as it's easy to install, and manage.
 * Install some sort of security policy extension, such as SELinux or AppArmor. I prefer SELinux because of its ability to automatically generate new policies. But whatever is preferred.
@@ -26,7 +26,7 @@ sudo setenforce 0
 Install X Virtual Framebuffer, screen, and a HTTPS extension to APT, as well as ensuring that sudo, and sqlite3 is installed.
 
 ```
-sudo apt-get install sudo xvfb screen apt-transport-https sqlite3
+sudo apt-get install sudo xvfb screen apt-transport-https sqlite3 libasound2-plugins:i386
 ```
 
 ## Installing Wine                                                            #
@@ -47,7 +47,7 @@ Add the repository to **/etc/apt/sources.list.d/**
 
 ```
 cat << EOF | sudo tee /etc/apt/sources.list.d/winehq.list
-deb https://dl.winehq.org/wine-builds/debian/ jessie main
+deb https://dl.winehq.org/wine-builds/debian/ stretch main
 EOF
 ```
 
@@ -60,45 +60,14 @@ sudo apt-get update
 ## Install Wine
 
 ```
-sudo apt-get install --install-recommends winehq-staging
+sudo apt-get install --install-recommends wine-staging
 ```
 
 ## Installing Steam                                                           #
-Download Steam Server
+Install steamcmd
 
 ```
-wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
-```
-
-Create directory for Steam Server, and extract downloaded archive
-
-```
-sudo mkdir /opt/steamcmd
-sudo tar -zxvf steamcmd_linux.tar.gz -C /opt/steamcmd
-```
-
-Add Steam commands to $PATH
-
-```
-cat << EOF | sudo tee /etc/profile.d/steamcmd.sh
-export PATH=\$PATH:/opt/steamcmd
-EOF
-. /etc/profile.d/steamcmd.sh
-```
-
-Update Steam binaries
-
-```
-sudo -i steamcmd.sh +quit
-```
-
-Update dynamic linker run-time bindings (I really think this is unsafe, but its required).
-
-```
-cat << EOF | sudo tee /etc/ld.so.conf.d/steamcmd.conf
-/opt/steamcmd/linux32
-EOF
-sudo ldconfig
+sudo apt-get install --install-recommends steamcmd
 ```
 
 ## Installing Conan Exiles as runtime user                                    #
@@ -121,24 +90,28 @@ sudo su - steam -s /bin/bash
 ```
 
 First initialize your Wine environmnet
-wineboot
+```
+/opt/wine-staging/bin/wineboot
+```
 
 Download Conan Exiles
 
 ```
-steamcmd.sh +@sSteamCmdForcePlatformType windows +force_install_dir /home/steam/conanexiles +login anonymous +app_update 443030 validate +quit
+steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir /home/steam/conanexiles +login anonymous +app_update 443030 validate +quit
 ```
 
 Test that you can start Conan Exiles server
 
 ```
-xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32' wine64 /home/steam/conanexiles/ConanSandboxServer.exe -log
+xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32' /opt/wine-staging/bin/wine64 /home/steam/conanexiles/ConanSandboxServer.exe -log
 ```
 
 After it starts up, then just kill it with Ctrl+C
 
 ## Configuring Conan Exiles                                                   #
 Still as runtime user, create the configuration files. Change the values below to what you want, such as passwords, and server name.
+
+NB: With the current release I'm not really able to tell the server to listen to other ports than the new default ports 7778/udp, and 14001/udp.
 
 ```
 cat > ~/conanexiles/ConanSandbox/Saved/Config/WindowsServer/Engine.ini << EOF
@@ -249,7 +222,7 @@ cat << EOF | sudo tee /etc/ufw/applications.d/conanexiles
 [conanexiles]
 title=Conan Exiles Server
 description=Conan Exiles dedicated server default ports
-ports=7777/udp|27015/udp
+ports=7778/udp|14001/udp
 categories=Game;
 reference=[https://github.com/atterdag/conanexiles-server-howto]
 EOF

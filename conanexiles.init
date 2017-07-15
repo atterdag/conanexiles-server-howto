@@ -11,8 +11,8 @@
 # I suppose I should put the variables in a /etc/default/conanexiles file
 USERNAME=steam
 SERVER_DIR="/home/steam/conanexiles"
-SERVER_PORT=7777
-QUERY_PORT=27015
+SERVER_PORT=7778
+QUERY_PORT=14001
 MAX_PLAYERS=10
 SCRIPTNAME=/etc/init.d/conanexiles
 # If you want to the server to only listen on a specific IP address, then define it below
@@ -44,7 +44,7 @@ function get_pid() {
 case "$1" in
 	start)
 		echo -n "Starting ${DESC}: " "$NAME"
-		screen -S $NAME -d -m su - $USERNAME -s /bin/bash -c "xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32' wine64 ${SERVER_DIR}/ConanSandboxServer.exe $OPTIONS" || exit 1
+		screen -S $NAME -d -m su - $USERNAME -s /bin/bash -c "xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32' /opt/wine-staging/bin/wine64 ${SERVER_DIR}/ConanSandboxServer.exe $OPTIONS" || exit 1
 		until get_pid > /dev/null; do sleep 1; done
 		PID=$(get_pid)
 		echo $PID > /run/${NAME}.pid
@@ -85,7 +85,7 @@ case "$1" in
 			exit 1
 		fi
 		echo "Updating ..."
-		su - $USERNAME -s /bin/bash -c "steamcmd.sh +@sSteamCmdForcePlatformType windows +force_install_dir ${SERVER_DIR} +login anonymous +app_update 443030 validate +quit"
+		su - $USERNAME -s /bin/bash -c "steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir ${SERVER_DIR} +login anonymous +app_update 443030 validate +quit"
 		;;
 	backup)
 		PID=$(get_pid)
