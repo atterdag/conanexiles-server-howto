@@ -118,10 +118,10 @@ $ cat > ~/conanexiles/ConanSandbox/Saved/Config/WindowsServer/Engine.ini << EOF
 [OnlineSubsystemSteam]
 ServerName="atterdag's super test server"
 ServerPassword=secret
-# Default server port is 7777
-#Port=7777 # Don't set it here, and set it the start script
+# Default server port is 7778
+#Port=7778 # Don't set it here, and set it the start script
 # Default query port is 27015
-#QueryPort=27015 # Don't set it here, and set it the start script
+#QueryPort=14001 # Don't set it here, and set it the start script
 EOF
 
 $ cat > ~/conanexiles/ConanSandbox/Saved/Config/WindowsServer/Game.ini << EOF
@@ -222,7 +222,7 @@ $ cat << EOF | sudo tee /etc/ufw/applications.d/conanexiles
 [conanexiles]
 title=Conan Exiles Server
 description=Conan Exiles dedicated server default ports
-ports=7778/udp|14001/udp
+ports=7778/udp|7779/udp|14001/udp
 categories=Game;
 reference=[https://github.com/atterdag/conanexiles-server-howto]
 EOF
