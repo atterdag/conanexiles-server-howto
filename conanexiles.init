@@ -15,7 +15,7 @@ SERVER_PORT=7778
 QUERY_PORT=14001
 MAX_PLAYERS=10
 SCRIPTNAME=/etc/init.d/conanexiles
-# If you want to the server to only listen on a specific IP address, then define it below
+# If you want to the server to only listen on a specific IP address, then uncomment it below.
 #IP_ADDRESS=127.0.0.1
 
 ##############################################################################
