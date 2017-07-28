@@ -39,8 +39,7 @@ $ sudo dpkg --add-architecture i386
 Download, and add key used to sign wine packages.
 
 ```
-$ wget https://dl.winehq.org/wine-builds/Release.key
-sudo apt-key add Release.key
+$ wget https://dl.winehq.org/wine-builds/Release.key && sudo apt-key add Release.key
 ```
 
 Add the repository to **/etc/apt/sources.list.d/**
